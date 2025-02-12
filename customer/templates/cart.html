@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Giỏ Hàng{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-6">
+    <h2 class="text-3xl font-bold text-gray-700 text-center mb-6">🛒 Giỏ Hàng Của Bạn</h2>
+
+    {% if cart_items %}
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <table class="w-full border-collapse" id="cart-table">
+            <thead>
+                <tr class="bg-gray-200 text-gray-700">
+                    <th class="py-2 px-4">Sách</th>
+                    <th class="py-2 px-4">Tác Giả</th>
+                    <th class="py-2 px-4">Giá</th>
+                    <th class="py-2 px-4">Số Lượng</th>
+                    <th class="py-2 px-4">Tổng</th>
+                    <th class="py-2 px-4">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart_items %}
+                <tr class="border-t cart-item" data-id="{{ item.book.id }}" data-price="{{ item.book.price }}" data-quantity="{{ item.quantity }}">
+                    <td class="py-3 px-4 flex items-center">
+                        <img src="{{ item.book.image.url }}" alt="{{ item.book.name }}" class="w-16 h-20 object-cover mr-4">
+                        <span>{{ item.book.name }}</span>
+                    </td>
+                    <td class="py-3 px-4">{{ item.book.author }}</td>
+                    <td class="py-3 px-4 text-blue-600 font-semibold price">{{ item.book.price }}₫</td>
+                    <td class="py-3 px-4 quantity">{{ item.quantity }}</td>
+                    <td class="py-3 px-4 text-green-600 font-semibold total-price"></td>
+                    <td class="py-3 px-4">
+                        <a href="{% url 'remove_from_cart' item.id %}" 
+                           class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">
+                            ❌ Xóa
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Tổng giá trị đơn hàng -->
+        <div class="flex justify-end mt-6">
+            <p class="text-lg font-semibold text-gray-700">
+                🛍️ Tổng Tiền: <span id="total-price" class="text-green-600 text-2xl">0₫</span>
+            </p>
+        </div>
+
+        <!-- Button Thanh Toán -->
+        <div class="flex justify-end mt-4">
+            <button id="checkout-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition">
+                💳 Thanh Toán Ngay
+            </button>
+        </div>
+    </div>
+
+    {% else %}
+    <p class="text-center text-gray-500">🛒 Giỏ hàng của bạn đang trống.</p>
+    <div class="text-center mt-4">
+        <a href="{% url 'all_books' %}" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition">
+            📖 Tiếp Tục Mua Sách
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript -->
+<script src="{% static 'js/cart.js' %}"></script>  <!-- ✅ Load external JavaScript -->
+{% endblock %}

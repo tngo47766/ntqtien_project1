@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}  <!-- ✅ Load static files if needed -->
+
+{% block title %}Tất Cả Sách{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-md rounded-lg p-4">
+    <form method="GET" class="flex flex-col md:flex-row justify-between">
+        <input type="text" name="search" placeholder="🔍 Tìm kiếm sách..." value="{{ request.GET.search }}" 
+               class="border p-2 rounded w-full md:w-1/3 mb-2 md:mb-0">
+        
+        <select name="price" class="border p-2 rounded w-full md:w-1/4 mb-2 md:mb-0">
+            <option value="">🔽 Lọc theo giá</option>
+            <option value="low_to_high" {% if request.GET.price == "low_to_high" %}selected{% endif %}>Thấp đến cao</option>
+            <option value="high_to_low" {% if request.GET.price == "high_to_low" %}selected{% endif %}>Cao đến thấp</option>
+        </select>
+        
+        <select name="sort" class="border p-2 rounded w-full md:w-1/4 mb-2 md:mb-0">
+            <option value="">🔽 Sắp xếp</option>
+            <option value="a_to_z" {% if request.GET.sort == "a_to_z" %}selected{% endif %}>A - Z</option>
+            <option value="z_to_a" {% if request.GET.sort == "z_to_a" %}selected{% endif %}>Z - A</option>
+        </select>
+        
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
+            Áp dụng
+        </button>
+    </form>
+</div>
+
+<!-- Books List -->
+<div class="py-10">
+    <h3 class="text-3xl font-bold text-center text-gray-700 mb-6">📖 Danh Sách Sách</h3>
+
+    {% if books %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 px-6">
+        {% for book in books %}
+        <div class="bg-white shadow-md rounded-lg overflow-hidden p-4">
+            {% if book.image %}
+                <img src="{{ book.image.url }}" alt="{{ book.name }}" class="w-full h-48 object-cover">
+            {% else %}
+                <img src="{% static 'images/default-book.png' %}" alt="Không có ảnh" class="w-full h-48 object-cover">
+            {% endif %}
+            <h4 class="text-lg font-bold mt-2">{{ book.name }}</h4>
+            <p class="text-gray-700">✍ Tác giả: <span class="font-semibold">{{ book.author }}</span></p>
+            <p class="text-blue-600 font-bold text-lg">{{ book.price }}₫</p>
+
+            <!-- Nút Mua Ngay -->
+            <button onclick="openBuyNowModal('{{ book.pk }}', '{{ book.name }}')" 
+                    class="mt-3 w-full bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition">
+                Mua Ngay
+            </button>
+
+            <!-- Nút Thêm vào Giỏ Hàng -->
+            <button onclick="addToCart({{ book.pk }})" 
+                    class="mt-2 w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
+                Thêm vào Giỏ Hàng
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center text-gray-500">Không có sách nào được tìm thấy.</p>
+    {% endif %}
+</div>
+
+<!-- Mua Ngay Modal -->
+<div id="buyNowModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+        <h2 class="text-xl font-bold mb-4">📖 Xác Nhận Mua Ngay</h2>
+        <p class="mb-2">Sách: <span id="selectedBookName" class="font-semibold"></span></p>
+        <label for="quantity" class="block mb-2">Số lượng:</label>
+        <input type="number" id="quantity" min="1" value="1" class="border p-2 rounded w-full">
+        
+        <div class="flex justify-between mt-4">
+            <button onclick="closeBuyNowModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition">
+                Hủy
+            </button>
+            <button onclick="confirmBuyNow()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
+                Xác Nhận
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script src="{% static 'js/book.js' %}"></script>  <!-- ✅ Load external JavaScript -->
+{% endblock %}
