@@ -4,7 +4,7 @@ from book.models import Book
 import datetime
 
 class Order(models.Model):
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)  # Change Products to Book
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
     price = models.IntegerField()
@@ -13,12 +13,9 @@ class Order(models.Model):
     date = models.DateField(default=datetime.datetime.today)
     status = models.BooleanField(default=False)
 
-    def place_order(self):
-        self.save()
-
-    @staticmethod
-    def get_orders_by_customer(customer_id):
-        return Order.objects.filter(customer=customer_id).order_by('-date')
-
     def __str__(self):
-        return f"Order {self.id} - {self.customer.name} - {self.book.name}"
+        return f"Order {self.id} - {self.get_customer_username()} - {self.book.name}"
+
+    def get_customer_username(self):
+        """ ✅ Get the username from related User model """
+        return self.customer.user.username if self.customer.user else "Unknown Customer"

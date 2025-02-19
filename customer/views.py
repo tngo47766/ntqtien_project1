@@ -1,91 +1,81 @@
-from .models import Customer
-from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render, redirect
-from django.contrib.auth.hashers import make_password, check_password
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
+from .models import Customer
+from book.models import Book
+from order.models import Order
+
+# 📌 View: List all customers
+@login_required
 def customer_list(request):
     customers = Customer.objects.all()
     return render(request, 'customer_list.html', {'customers': customers})
 
-# View đăng ký
+
+# 📌 View: User Registration
+@csrf_exempt
 def signup(request):
     if request.method == 'POST':
-        name = request.POST['name']
+        username = request.POST['username']
         email = request.POST['email']
-        password = make_password(request.POST['password'])
+        password = request.POST['password']
         address = request.POST['address']
         contact = request.POST['contact']
 
-        if Customer.objects.filter(email=email).exists():
-            messages.error(request, "Email này đã được sử dụng!")
-            return redirect('signup')
+        # 🔥 Create User & Customer Profile
+        user = User.objects.create_user(username=username, email=email, password=password)
+        Customer.objects.create(user=user, address=address, contact=contact)
+        
+        login(request, user)  # Auto login after signup
+        return redirect('customer_main')
 
-        customer = Customer(name=name, email=email, password=password, address=address, contact=contact)
-        customer.save()
-        messages.success(request, "Đăng ký thành công! Hãy đăng nhập.")
-        return redirect('login')
+    return render(request, 'customer/signup.html')
 
-    return render(request, 'signup.html')
 
-def login(request):
+# 📌 View: User Login
+@csrf_exempt
+def customer_login(request):
     if request.method == 'POST':
-        email = request.POST.get('email')  # Use .get() to avoid KeyError
-        password = request.POST.get('password')
+        username = request.POST['username']
+        password = request.POST['password']
+        
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('customer_main')
+        else:
+            return render(request, 'customer/login.html', {'error': 'Invalid username or password'})
 
-        if not email or not password:
-            messages.error(request, "Vui lòng nhập email và mật khẩu!")
-            return redirect('login')
-
-        try:
-            customer = Customer.objects.get(email=email)
-            if check_password(password, customer.password):
-                request.session['customer_id'] = customer.id
-                request.session['customer_name'] = customer.name
-                messages.success(request, "Đăng nhập thành công!")
-                return redirect('customer_main')
-            else:
-                messages.error(request, "Mật khẩu không đúng!")
-        except Customer.DoesNotExist:
-            messages.error(request, "Email không tồn tại!")
-
-    return render(request, 'login.html')
+    return render(request, 'customer/login.html')
 
 
-# View trang chính của khách hàng
-from order.models import Order
+# 📌 View: Customer Dashboard
+@login_required
 def customer_main(request):
-    if 'customer_id' not in request.session:
-        return redirect('login')
-
-    customer_id = request.session['customer_id']
-
-    # Get customer info (handle missing data safely)
-    try:
-        customer = Customer.objects.get(id=customer_id)
-        customer_name = customer.name
-    except Customer.DoesNotExist:
-        return redirect('login')
-
+    customer = get_object_or_404(Customer, user=request.user)
+    
     # Fetch orders for the logged-in customer
     orders = Order.objects.filter(customer=customer).order_by('-date')
 
-    return render(request, 'customer_main.html', {
-        'customer_name': customer_name,
+    return render(request, 'customer/customer_main.html', {
+        'customer_name': customer.user.username,
         'orders': orders
     })
 
 
-# View đăng xuất
-
-def logout(request):
-    request.session.flush()  # Xóa tất cả session
+# 📌 View: Logout User
+def customer_logout(request):
+    logout(request)
     messages.success(request, "Đăng xuất thành công!")
-    return redirect('landing_page')  # Chuyển hướng về trang chủ
+    return redirect('landing_page')  # Redirect to home page
 
-from book.models import Book
 
+# 📌 View: Show All Books with Filters
 def all_books(request):
     search_query = request.GET.get('search', '')  # Get search query
     price_filter = request.GET.get('price', '')  # Get price filter
@@ -109,21 +99,55 @@ def all_books(request):
     elif sort_by == 'z_to_a':
         books = books.order_by('-name')
 
-    return render(request, 'all_books.html', {'books': books})
+    return render(request, 'customer/all_books.html', {'books': books})
+
+
+from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+import json
 
+from cart.models import Cart
+from book.models import Book
+from customer.models import Customer
+
+
+@csrf_exempt
+@login_required  # ✅ Ensure only logged-in users can add items to cart
 def add_to_cart(request, book_id):
-    if 'customer_id' not in request.session:
-        return JsonResponse({'message': 'Vui lòng đăng nhập để thêm vào giỏ hàng'}, status=401)
+    if request.method != "POST":
+        return JsonResponse({'message': 'Phương thức không hợp lệ'}, status=405)
 
-    cart = request.session.get('cart', [])
-    cart.append(book_id)
-    request.session['cart'] = cart
-    return JsonResponse({'message': 'Sách đã được thêm vào giỏ hàng!'})
+    try:
+        customer = get_object_or_404(Customer, user=request.user)
+        book = get_object_or_404(Book, id=book_id)
 
+        # ✅ Parse JSON request body
+        data = json.loads(request.body)
+        quantity = data.get("quantity", 1)
+
+        # ✅ Get or create cart item
+        cart_item, created = Cart.objects.get_or_create(customer=customer, book=book)
+        if not created:
+            cart_item.quantity += quantity  # Update quantity if already in cart
+        cart_item.save()
+
+        # ✅ Update session cart count
+        request.session['cart_items_count'] = Cart.objects.filter(customer=customer).count()
+
+        return JsonResponse({
+            'message': 'Sách đã được thêm vào giỏ hàng!',
+            'cart_count': request.session['cart_items_count']
+        })
+
+    except Exception as e:
+        return JsonResponse({'message': 'Lỗi khi thêm vào giỏ hàng', 'error': str(e)}, status=500)
+
+
+
+# 📌 View: Buy Now (Redirect to Checkout)
+@login_required
 def buy_now(request, book_id):
-    if 'customer_id' not in request.session:
-        return redirect('login')
-
-    book = Book.objects.get(id=book_id)
+    book = get_object_or_404(Book, id=book_id)
     return render(request, 'checkout.html', {'book': book})

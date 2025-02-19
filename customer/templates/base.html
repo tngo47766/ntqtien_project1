@@ -7,51 +7,52 @@
     <title>{% block title %}Nhà Sách Online{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100" data-user-logged-in="{% if request.session.customer_id %}true{% else %}false{% endif %}">
 
-    <!-- Navigation Bar -->
+<body class="bg-gray-100" data-user-logged-in="{% if request.user.is_authenticated %}true{% else %}false{% endif %}">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+    <!-- Navbar -->
     <nav class="bg-blue-600 text-white py-4">
         <div class="container mx-auto flex justify-between items-center px-6">
-            <h1 class="text-2xl font-bold">📚 Nhà Sách Online</h1>
-            <a href="/customer/main" class="px-4 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 transition">
-                Trang Chủ
+            <a href="{% url 'all_books' %}" class="text-2xl font-bold hover:underline">
+                📚 Nhà Sách Online
             </a>
 
-            <!-- Xem Giỏ Hàng Button -->
-            <div class="relative">
+            <div class="flex items-center space-x-4">
+                <!-- Cart Button with Dynamic Count -->
                 <a href="{% url 'view_cart' %}" class="px-4 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 transition flex items-center">
                     🛒 Giỏ Hàng 
                     <span id="cart-count" class="ml-2 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded-full">
-                        {% if request.session.cart_items_count %}
-                            {{ request.session.cart_items_count }}
-                        {% else %}
-                            0
-                        {% endif %}
+                        {{ request.session.cart_items_count|default:"0" }}  <!-- ✅ Dynamically updates -->
                     </span>
                 </a>
+
+                {% if request.user.is_authenticated %}
+                    <a href="{% url 'customer_main' %}" class="px-4 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 transition">
+                        Xin chào, {{ request.user.username }}
+                    </a>
+                    <a href="{% url 'customer_logout' %}" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                        Đăng Xuất
+                    </a>
+                {% else %}
+                    <a href="{% url 'customer_login' %}" class="px-4 py-2 bg-white text-blue-600 rounded hover:bg-gray-200 transition">
+                        Đăng Nhập
+                    </a>
+                    <a href="{% url 'signup' %}" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        Đăng Ký
+                    </a>
+                {% endif %}
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
     <div class="container mx-auto py-6">
         {% block content %}{% endblock %}
     </div>
 
-    <!-- Modal Đăng Nhập -->
-    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h2 class="text-xl font-bold mb-4">Vui lòng đăng nhập</h2>
-            <a href="{% url 'login' %}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
-                Đăng Nhập Ngay
-            </a>
-        </div>
-    </div>
-
-    <!-- CSRF Token for AJAX -->
-    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-
-    <!-- Load JavaScript -->
-    <script src="{% static 'js/main.js' %}"></script>
+    <!-- ✅ Ensure JavaScript Loads After Page Content -->
+    <!-- <script src="{% static 'js/cart.js' %}" defer></script>   -->
+    <script src="{% static 'js/main.js' %}" defer></script>
+    <script src="{% static 'js/book.js' %}" defer></script> 
 </body>
 </html>

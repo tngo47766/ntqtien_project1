@@ -22,24 +22,32 @@
             </thead>
             <tbody>
                 {% for item in cart_items %}
-                <tr class="border-t cart-item" data-id="{{ item.book.id }}" data-price="{{ item.book.price }}" data-quantity="{{ item.quantity }}">
+                <tr class="border-t cart-item" 
+                    data-id="{{ item.id }}" 
+                    data-book-id="{{ item.book.id }}"  
+                    data-price="{{ item.book.price }}">
+            
                     <td class="py-3 px-4 flex items-center">
                         <img src="{{ item.book.image.url }}" alt="{{ item.book.name }}" class="w-16 h-20 object-cover mr-4">
                         <span>{{ item.book.name }}</span>
                     </td>
                     <td class="py-3 px-4">{{ item.book.author }}</td>
                     <td class="py-3 px-4 text-blue-600 font-semibold price">{{ item.book.price }}₫</td>
-                    <td class="py-3 px-4 quantity">{{ item.quantity }}</td>
+                    <td class="py-3 px-4">
+                        <input type="number" class="cart-quantity border p-2 w-16 text-center" min="1" 
+                               value="{{ item.quantity }}" data-id="{{ item.id }}">
+                    </td>
                     <td class="py-3 px-4 text-green-600 font-semibold total-price"></td>
                     <td class="py-3 px-4">
-                        <a href="{% url 'remove_from_cart' item.id %}" 
-                           class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">
+                        <button class="remove-item bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition" 
+                                data-id="{{ item.id }}">
                             ❌ Xóa
-                        </a>
+                        </button>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
+            
         </table>
 
         <!-- Tổng giá trị đơn hàng -->

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Thanh Toán{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-xl font-bold text-center mb-4">💳 Xác Nhận Thanh Toán</h2>
+    <p><strong>Sách:</strong> {{ book.name }}</p>
+    <p><strong>Giá:</strong> {{ book.price }}₫</p>
+
+    <form action="{% url 'place_order' %}" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="book_id" value="{{ book.id }}">
+        <label>Số lượng:</label>
+        <input type="number" name="quantity" value="1" min="1" class="border p-2 rounded w-full mb-4">
+
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded w-full hover:bg-blue-600">
+            Xác Nhận Mua
+        </button>
+    </form>
+</div>
+{% endblock %}

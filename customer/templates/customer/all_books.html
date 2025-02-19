@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}  <!-- ✅ Load static files if needed -->
+{% load static %}  <!-- ✅ Load static files -->
 
 {% block title %}Tất Cả Sách{% endblock %}
 
@@ -50,8 +50,9 @@
                 Mua Ngay
             </button>
 
+
             <!-- Nút Thêm vào Giỏ Hàng -->
-            <button onclick="addToCart({{ book.pk }})" 
+            <button onclick="addToCart('{{ book.pk }}')" 
                     class="mt-2 w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
                 Thêm vào Giỏ Hàng
             </button>

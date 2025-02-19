@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
-    console.log("JavaScript Loaded Successfully!");
+    console.log("✅ JavaScript Loaded Successfully!");
 
     // Function to handle Buy Now button
     function handleBuyNow(bookId) {
@@ -19,23 +19,35 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!isLoggedIn) {
             document.getElementById("loginModal").classList.remove("hidden");
         } else {
+            let csrfToken = document.querySelector("input[name='csrfmiddlewaretoken']")?.value;
+            if (!csrfToken) {
+                alert("Lỗi bảo mật: Không tìm thấy CSRF Token.");
+                return;
+            }
+
             fetch(`/cart/add/${bookId}/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': document.querySelector("input[name='csrfmiddlewaretoken']").value,
+                    'X-CSRFToken': csrfToken,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ book_id: bookId, quantity: 1 })
+                body: JSON.stringify({ quantity: 1 })
             })
             .then(response => response.json())
             .then(data => {
+                if (data.cart_count !== undefined) {
+                    document.getElementById("cart-count").textContent = data.cart_count;  // ✅ Fix: Update cart count dynamically
+                }
                 alert(data.message);
             })
-            .catch(error => console.error("Error adding to cart:", error));
+            .catch(error => {
+                console.error("Lỗi khi thêm vào giỏ hàng:", error);
+                alert("Có lỗi xảy ra. Vui lòng thử lại.");
+            });
         }
     }
 
-    // Attach functions to global window object for button clicks
+    // Attach functions to global window object for inline `onclick` events
     window.handleBuyNow = handleBuyNow;
-    window.addToCart = addToCart;
+    window.addToCart = addToCart;  // ✅ Fix: Ensure addToCart is globally available
 });

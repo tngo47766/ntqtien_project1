@@ -1,20 +1,28 @@
 document.addEventListener("DOMContentLoaded", function() {
     let selectedBookId = null;
 
-    function openBuyNowModal(bookId, bookName) {
+    // ✅ Ensure function is globally accessible
+    window.openBuyNowModal = function(bookId, bookName) {
         selectedBookId = bookId;
         document.getElementById("selectedBookName").textContent = bookName;
         document.getElementById("buyNowModal").classList.remove("hidden");
-    }
+    };
 
-    function closeBuyNowModal() {
+    window.closeBuyNowModal = function() {
         document.getElementById("buyNowModal").classList.add("hidden");
-    }
+    };
 
-    function confirmBuyNow() {
+    window.confirmBuyNow = function() {
         let quantity = document.getElementById("quantity").value;
         if (quantity < 1) {
             alert("Số lượng phải lớn hơn 0!");
+            return;
+        }
+
+        // ✅ Fetch CSRF token from the meta tag for security
+        let csrfToken = document.querySelector("input[name='csrfmiddlewaretoken']")?.value;
+        if (!csrfToken) {
+            alert("Lỗi bảo mật: Không tìm thấy CSRF Token.");
             return;
         }
 
@@ -22,7 +30,7 @@ document.addEventListener("DOMContentLoaded", function() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-CSRFToken": document.querySelector("input[name='csrfmiddlewaretoken']").value
+                "X-CSRFToken": csrfToken
             },
             body: JSON.stringify({
                 items: [{ book_id: selectedBookId, quantity: quantity }]
@@ -32,14 +40,12 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(data => {
             alert(data.message);
             if (data.success) {
-                window.location.href = "/customer/main/";  // ✅ Chuyển đến trang chính sau khi mua hàng
+                window.location.href = "/customer/main/";  // ✅ Redirect after purchase
             }
         })
-        .catch(error => console.error("Lỗi khi đặt hàng:", error));
-    }
-
-    // Expose functions globally for button events
-    window.openBuyNowModal = openBuyNowModal;
-    window.closeBuyNowModal = closeBuyNowModal;
-    window.confirmBuyNow = confirmBuyNow;
+        .catch(error => {
+            console.error("Lỗi khi đặt hàng:", error);
+            alert("Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.");
+        });
+    };
 });
